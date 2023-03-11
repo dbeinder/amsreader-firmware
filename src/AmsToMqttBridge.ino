@@ -563,7 +563,7 @@ void loop() {
 
 	if(config.isMeterChanged()) {
 		config.getMeterConfig(meterConfig);
-		setupHanPort(gpioConfig.hanPin, meterConfig.baud, meterConfig.parity, meterConfig.invert);
+		setupHanPort(gpioConfig, meterConfig.baud, meterConfig.parity, meterConfig.invert);
 		config.ackMeterChanged();
 		delete gcmParser;
 		gcmParser = NULL;
@@ -606,7 +606,7 @@ void loop() {
 				meterAutoIndex++; // Default is to try the first one in setup()
 				debugI("Meter serial autodetect, swapping to: %d, %d, %s", bauds[meterAutoIndex], parities[meterAutoIndex], inverts[meterAutoIndex] ? "true" : "false");
 				if(meterAutoIndex >= 4) meterAutoIndex = 0;
-				setupHanPort(gpioConfig.hanPin, bauds[meterAutoIndex], parities[meterAutoIndex], inverts[meterAutoIndex]);
+				setupHanPort(gpioConfig, bauds[meterAutoIndex], parities[meterAutoIndex], inverts[meterAutoIndex]);
 				meterAutodetectLastChange = now;
 			}
 		} else if(meterAutodetect) {
@@ -616,7 +616,7 @@ void loop() {
 			meterConfig.parity = parities[meterAutoIndex];
 			meterConfig.invert = inverts[meterAutoIndex];
 			config.setMeterConfig(meterConfig);
-			setupHanPort(gpioConfig.hanPin, meterConfig.baud, meterConfig.parity, meterConfig.invert);
+			setupHanPort(gpioConfig, meterConfig.baud, meterConfig.parity, meterConfig.invert);
 		}
 	} catch(const std::exception& e) {
 		debugE("Exception in meter autodetect (%s)", e.what());
@@ -631,7 +631,9 @@ void loop() {
 	#endif
 }
 
-void setupHanPort(uint8_t pin, uint32_t baud, uint8_t parityOrdinal, bool invert) {
+void setupHanPort(GpioConfig& gpioConfig, uint32_t baud, uint8_t parityOrdinal, bool invert) {
+	uint8_t pin = gpioConfig.hanPin;
+
 	if(Debug.isActive(RemoteDebug::INFO)) Debug.printf((char*) F("(setupHanPort) Setting up HAN on pin %d with baud %d and parity %d\n"), pin, baud, parityOrdinal);
 
 	if(baud == 0) {
@@ -740,6 +742,11 @@ void setupHanPort(uint8_t pin, uint32_t baud, uint8_t parityOrdinal, bool invert
 
 		Serial.end();
 		Serial.begin(115200);
+	}
+
+	// The library automatically sets the pullup in Serial.begin()
+	if(!gpioConfig.hanPinPullup) {
+		pinMode(gpioConfig.hanPin, INPUT);
 	}
 
 	// Empty buffer before starting
