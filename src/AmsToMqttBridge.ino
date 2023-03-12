@@ -176,33 +176,35 @@ void setup() {
 	config.getMeterConfig(meterConfig);
 	Serial.flush();
 	Serial.end();
-	if(gpioConfig.hanPin == 3) {
-		shared = true;
-		#if defined(ESP8266)
-			SerialConfig serialConfig;
-		#elif defined(ESP32)
-			uint32_t serialConfig;
-		#endif
-		switch(meterConfig.parity) {
-			case 2:
-				serialConfig = SERIAL_7N1;
-				break;
-			case 3:
-				serialConfig = SERIAL_8N1;
-				break;
-			case 10:
-				serialConfig = SERIAL_7E1;
-				break;
-			default:
-				serialConfig = SERIAL_8E1;
-				break;
+	#if !ARDUINO_USB_CDC_ON_BOOT
+		if(gpioConfig.hanPin == 3) {
+			shared = true;
+			#if defined(ESP8266)
+				SerialConfig serialConfig;
+			#elif defined(ESP32)
+				uint32_t serialConfig;
+			#endif
+			switch(meterConfig.parity) {
+				case 2:
+					serialConfig = SERIAL_7N1;
+					break;
+				case 3:
+					serialConfig = SERIAL_8N1;
+					break;
+				case 10:
+					serialConfig = SERIAL_7E1;
+					break;
+				default:
+					serialConfig = SERIAL_8E1;
+					break;
+			}
+			#if defined(ESP32)
+				Serial.begin(meterConfig.baud == 0 ? 2400 : meterConfig.baud, serialConfig, -1, -1, meterConfig.invert);
+			#else
+				Serial.begin(meterConfig.baud == 0 ? 2400 : meterConfig.baud, serialConfig, SERIAL_FULL, 1, meterConfig.invert);
+			#endif
 		}
-		#if defined(ESP32)
-			Serial.begin(meterConfig.baud == 0 ? 2400 : meterConfig.baud, serialConfig, -1, -1, meterConfig.invert);
-		#else
-			Serial.begin(meterConfig.baud == 0 ? 2400 : meterConfig.baud, serialConfig, SERIAL_FULL, 1, meterConfig.invert);
-		#endif
-	}
+	#endif
 
  	if(!shared) {
 		Serial.begin(115200);
@@ -646,20 +648,22 @@ void setupHanPort(GpioConfig& gpioConfig, uint32_t baud, uint8_t parityOrdinal, 
 	}
 
 	HardwareSerial *hwSerial = NULL;
-	if(pin == 3 || pin == 113) {
-		hwSerial = &Serial;
-	}
-
-	#if defined(ESP32)
-		if(pin == 9) {
-			hwSerial = &Serial1;
+	#if !ARDUINO_USB_CDC_ON_BOOT
+		if(pin == 3 || pin == 113) {
+			hwSerial = &Serial;
 		}
-		#if defined(CONFIG_IDF_TARGET_ESP32)
-			if(pin == 16) {
-				hwSerial = &Serial2;
+
+		#if defined(ESP32)
+			if(pin == 9) {
+				hwSerial = &Serial1;
 			}
-		#elif defined(CONFIG_IDF_TARGET_ESP32S2) ||  defined(CONFIG_IDF_TARGET_ESP32C3)
-			hwSerial = &Serial1;
+			#if defined(CONFIG_IDF_TARGET_ESP32)
+				if(pin == 16) {
+					hwSerial = &Serial2;
+				}
+			#elif defined(CONFIG_IDF_TARGET_ESP32S2) ||  defined(CONFIG_IDF_TARGET_ESP32C3)
+				hwSerial = &Serial1;
+			#endif
 		#endif
 	#endif
 
