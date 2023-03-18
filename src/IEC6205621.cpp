@@ -39,6 +39,7 @@ IEC6205621::IEC6205621(const char* p) {
 	if(meterId.isEmpty()) {
 		meterId = extract(payload, "0.0.5");
 	}
+	available |= AmsField::AmsMeterId;
 
 	meterModel = extract(payload, "96.1.1");
 	if(meterModel.isEmpty()) {
@@ -59,6 +60,7 @@ IEC6205621::IEC6205621(const char* p) {
 		tm.Minute = timestamp.substring(8,10).toInt();
 		tm.Second = timestamp.substring(10,12).toInt();
 		meterTimestamp = makeTime(tm); // TODO: Adjust for time zone
+		available |= AmsField::AmsMeterTimestamp;
 	}
 
 	activeImportPower = (uint16_t) (extractDouble(payload, "1.7.0"));

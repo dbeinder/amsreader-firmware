@@ -61,6 +61,16 @@ struct MqttConfig {
 	bool ssl;
 }; // 676
 
+struct InfluxDbConfig {
+	char host[128];
+	char authToken[128];
+	char bucket[32];
+	char org[32];
+	char measurementConfig[128];
+	char dataConfig[512];
+	uint32_t bufferMinRamKB;
+}; // 964
+
 struct WebConfig {
 	uint8_t security;
 	char username[64];

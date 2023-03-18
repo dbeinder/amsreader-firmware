@@ -120,6 +120,36 @@ DLMSParser *dlmsParser = NULL;
 DSMRParser *dsmrParser = NULL;
 
 void setup() {
+	pinMode(GPIO_NUM_18, INPUT_PULLDOWN);
+	pinMode(GPIO_NUM_19, INPUT_PULLDOWN);
+
+	// pinMode(GPIO_NUM_9, INPUT_PULLUP);
+	// pinMode(GPIO_NUM_5, OUTPUT);
+	// pinMode(GPIO_NUM_6, OUTPUT);
+	// pinMode(GPIO_NUM_4, OUTPUT);
+	// digitalWrite(GPIO_NUM_5, HIGH);
+	// digitalWrite(GPIO_NUM_6, HIGH);
+	// digitalWrite(GPIO_NUM_4, HIGH);
+	/*for(int n = 1;; n++) {
+		digitalWrite(GPIO_NUM_5, !(n == 1 || n == 4 || n == 6 || n == 7));
+		digitalWrite(GPIO_NUM_6, !(n == 2 || n == 4 || n == 5 || n == 7));
+		digitalWrite(GPIO_NUM_4, !(n == 3 || n == 5 || n == 6 || n == 7));
+		//R, G, B, RG, GB, RB, RGB
+		delay(500);
+		while(digitalRead(GPIO_NUM_9)) delay(100);
+		if (n == 7) n = 0;
+	}*/
+	/*digitalWrite(GPIO_NUM_4, LOW);
+	delay(300);
+	digitalWrite(GPIO_NUM_4, HIGH);
+	digitalWrite(GPIO_NUM_5, LOW);
+	delay(300);
+	digitalWrite(GPIO_NUM_5, HIGH);
+	digitalWrite(GPIO_NUM_6, LOW);
+	delay(300);
+	digitalWrite(GPIO_NUM_6, HIGH);*/
+	
+
 	Serial.begin(115200);
 
 	config.hasConfig(); // Need to run this to make sure all configuration have been migrated before we load GPIO config
@@ -378,6 +408,11 @@ uint8_t parities[] = { 11, 3, 3, 3 };
 bool inverts[] = { false, false, false, true };
 
 void loop() {
+	// disable broken USB: https://github.com/espressif/arduino-esp32/issues/6264
+	#if defined(CONFIG_IDF_TARGET_ESP32C3)
+		pinMode(GPIO_NUM_18, INPUT_PULLDOWN);
+		pinMode(GPIO_NUM_19, INPUT_PULLDOWN);
+	#endif
 	Debug.handle();
 	unsigned long now = millis();
 	if(gpioConfig.apPin != 0xFF) {

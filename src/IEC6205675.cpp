@@ -12,6 +12,7 @@ IEC6205675::IEC6205675(const char* d, uint8_t useMeterType, MeterConfig* meterCo
     Timezone tz(CEST, CET);
 
     this->packageTimestamp = ctx.timestamp;
+    available |= AmsField::AmsPackageTimestamp;
 
     val = getNumber(AMS_OBIS_ACTIVE_IMPORT, sizeof(AMS_OBIS_ACTIVE_IMPORT), ((char *) (d)));
     if(val == NOVALUE) {
@@ -140,6 +141,7 @@ IEC6205675::IEC6205675(const char* d, uint8_t useMeterType, MeterConfig* meterCo
     } else {
         listType = 1;
         activeImportPower = val;
+        available |= AmsField::AmsActiveImportPower;
 
         meterType = AmsTypeUnknown;
         CosemData* version = findObis(AMS_OBIS_VERSION, sizeof(AMS_OBIS_VERSION), d);
@@ -174,74 +176,88 @@ IEC6205675::IEC6205675(const char* d, uint8_t useMeterType, MeterConfig* meterCo
         str_len = getString(AMS_OBIS_VERSION, sizeof(AMS_OBIS_VERSION), ((char *) (d)), str);
         if(str_len > 0) {
             listId = String(str);
+            available |= AmsField::AmsListId;
         }
 
         val = getNumber(AMS_OBIS_ACTIVE_EXPORT, sizeof(AMS_OBIS_ACTIVE_EXPORT), ((char *) (d)));
         if(val != NOVALUE) {
             activeExportPower = val;
+            available |= AmsField::AmsActiveExportPower;
         }
 
         val = getNumber(AMS_OBIS_REACTIVE_IMPORT, sizeof(AMS_OBIS_REACTIVE_IMPORT), ((char *) (d)));
         if(val != NOVALUE) {
             reactiveImportPower = val;
+            available |= AmsField::AmsReactiveImportPower;
         }
 
         val = getNumber(AMS_OBIS_REACTIVE_EXPORT, sizeof(AMS_OBIS_REACTIVE_EXPORT), ((char *) (d)));
         if(val != NOVALUE) {
             reactiveExportPower = val;
+            available |= AmsField::AmsReactiveExportPower;
         }
 
         val = getNumber(AMS_OBIS_VOLTAGE_L1, sizeof(AMS_OBIS_VOLTAGE_L1), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 2;
             l1voltage = val;
+            available |= AmsField::AmsL1Voltage;
         }
         val = getNumber(AMS_OBIS_VOLTAGE_L2, sizeof(AMS_OBIS_VOLTAGE_L2), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 2;
             l2voltage = val;
+            available |= AmsField::AmsL2Voltage;
         }
         val = getNumber(AMS_OBIS_VOLTAGE_L3, sizeof(AMS_OBIS_VOLTAGE_L3), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 2;
             l3voltage = val;
+            available |= AmsField::AmsL3Voltage;
         }
 
         val = getNumber(AMS_OBIS_CURRENT_L1, sizeof(AMS_OBIS_CURRENT_L1), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 2;
             l1current = val;
+            available |= AmsField::AmsL1Current;
         }
         val = getNumber(AMS_OBIS_CURRENT_L2, sizeof(AMS_OBIS_CURRENT_L2), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 2;
             l2current = val;
+            available |= AmsField::AmsL2Current;
         }
         val = getNumber(AMS_OBIS_CURRENT_L3, sizeof(AMS_OBIS_CURRENT_L3), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 2;
             l3current = val;
+            available |= AmsField::AmsL3Current;
         }
 
         val = getNumber(AMS_OBIS_ACTIVE_IMPORT_COUNT, sizeof(AMS_OBIS_ACTIVE_IMPORT_COUNT), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 3;
             activeImportCounter = val / 1000.0;
+            available |= AmsField::AmsActiveImportCounter;
         }
         val = getNumber(AMS_OBIS_ACTIVE_EXPORT_COUNT, sizeof(AMS_OBIS_ACTIVE_EXPORT_COUNT), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 3;
             activeExportCounter = val / 1000.0;
+            available |= AmsField::AmsActiveExportCounter;
         }
         val = getNumber(AMS_OBIS_REACTIVE_IMPORT_COUNT, sizeof(AMS_OBIS_REACTIVE_IMPORT_COUNT), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 3;
             reactiveImportCounter = val / 1000.0;
+            available |= AmsField::AmsReactiveImportCounter;
         }
         val = getNumber(AMS_OBIS_REACTIVE_EXPORT_COUNT, sizeof(AMS_OBIS_REACTIVE_EXPORT_COUNT), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 3;
             reactiveExportCounter = val / 1000.0;
+            available |= AmsField::AmsReactiveExportCounter;
         }
 
         str_len = getString(AMS_OBIS_METER_MODEL, sizeof(AMS_OBIS_METER_MODEL), ((char *) (d)), str);
@@ -257,10 +273,12 @@ IEC6205675::IEC6205675(const char* d, uint8_t useMeterType, MeterConfig* meterCo
         str_len = getString(AMS_OBIS_METER_ID, sizeof(AMS_OBIS_METER_ID), ((char *) (d)), str);
         if(str_len > 0) {
             meterId = String(str);
+            available |= AmsField::AmsMeterId;
         } else {
             str_len = getString(AMS_OBIS_METER_ID_2, sizeof(AMS_OBIS_METER_ID_2), ((char *) (d)), str);
             if(str_len > 0) {
                 meterId = String(str);
+                available |= AmsField::AmsMeterId;
             }
         }
 
@@ -275,59 +293,70 @@ IEC6205675::IEC6205675(const char* d, uint8_t useMeterType, MeterConfig* meterCo
             } else {
                 meterTimestamp = ts;
             }
+            available |= AmsField::AmsMeterTimestamp;
         }
 
         val = getNumber(AMS_OBIS_POWER_FACTOR, sizeof(AMS_OBIS_POWER_FACTOR), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 4;
             powerFactor = val;
+            available |= AmsField::AmsPowerFactor;
         }
         val = getNumber(AMS_OBIS_POWER_FACTOR_L1, sizeof(AMS_OBIS_POWER_FACTOR_L1), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 4;
             l1PowerFactor = val;
+            available |= AmsField::AmsL1PowerFactor;
         }
         val = getNumber(AMS_OBIS_POWER_FACTOR_L2, sizeof(AMS_OBIS_POWER_FACTOR_L2), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 4;
             l2PowerFactor = val;
+            available |= AmsField::AmsL2PowerFactor;
         }
         val = getNumber(AMS_OBIS_POWER_FACTOR_L3, sizeof(AMS_OBIS_POWER_FACTOR_L3), ((char *) (d)));
         if(val != NOVALUE) {
             listType = 4;
             l3PowerFactor = val;
+            available |= AmsField::AmsL3PowerFactor;
         }
 
         val = getNumber(AMS_OBIS_ACTIVE_IMPORT_L1, sizeof(AMS_OBIS_ACTIVE_IMPORT_L1), ((char *) (d)));
         if (val != NOVALUE) {
             listType = 4;
             l1activeImportPower = val;
+            available |= AmsField::AmsL1ActiveImportPower;
         }
         val = getNumber(AMS_OBIS_ACTIVE_IMPORT_L2, sizeof(AMS_OBIS_ACTIVE_IMPORT_L2), ((char *) (d)));
         if (val != NOVALUE) {
             listType = 4;
             l2activeImportPower = val;
+            available |= AmsField::AmsL2ActiveImportPower;
         }
         val = getNumber(AMS_OBIS_ACTIVE_IMPORT_L3, sizeof(AMS_OBIS_ACTIVE_IMPORT_L3), ((char *) (d)));
         if (val != NOVALUE) {
             listType = 4;
             l3activeImportPower = val;
+            available |= AmsField::AmsL3ActiveImportPower;
         }
 
         val = getNumber(AMS_OBIS_ACTIVE_EXPORT_L1, sizeof(AMS_OBIS_ACTIVE_EXPORT_L1), ((char *) (d)));
         if (val != NOVALUE) {
             listType = 4;
             l1activeExportPower = val;
+            available |= AmsField::AmsL1ActiveExportPower;
         }
         val = getNumber(AMS_OBIS_ACTIVE_EXPORT_L2, sizeof(AMS_OBIS_ACTIVE_EXPORT_L2), ((char *) (d)));
         if (val != NOVALUE) {
             listType = 4;
             l2activeExportPower = val;
+            available |= AmsField::AmsL2ActiveExportPower;
         }
         val = getNumber(AMS_OBIS_ACTIVE_EXPORT_L3, sizeof(AMS_OBIS_ACTIVE_EXPORT_L3), ((char *) (d)));
         if (val != NOVALUE) {
             listType = 4;
             l3activeExportPower = val;
+            available |= AmsField::AmsL3ActiveExportPower;
         }
 
         if(meterType == AmsTypeKamstrup) {
@@ -357,6 +386,7 @@ IEC6205675::IEC6205675(const char* d, uint8_t useMeterType, MeterConfig* meterCo
                 AmsOctetTimestamp* amst = (AmsOctetTimestamp*) meterTs;
                 time_t ts = decodeCosemDateTime(amst->dt);
                 meterTimestamp = ts;
+                available |= AmsField::AmsMeterTimestamp;
             }
 
             CosemData* mid = getCosemDataAt(58, ((char *) (d))); // TODO: Get last item
@@ -366,11 +396,13 @@ IEC6205675::IEC6205675(const char* d, uint8_t useMeterType, MeterConfig* meterCo
                         memcpy(str, mid->oct.data, mid->oct.length);
                         str[mid->oct.length] = 0x00;
                         meterId = String(str);
+                        available |= AmsField::AmsMeterId;
                         break;
                     case CosemTypeOctetString:
                         memcpy(str, mid->str.data, mid->str.length);
                         str[mid->str.length] = 0x00;
                         meterId = String(str);
+                        available |= AmsField::AmsMeterId;
                         break;
                 }
             }

@@ -230,3 +230,46 @@ void AmsData::setLastError(int8_t lastError) {
         lastErrorCount++;
     }
 }
+
+double AmsData::getAmsNumberField(AmsField field) {
+    switch(field) {
+        case AmsField::AmsActiveImportPower: return this->activeImportPower;
+        case AmsField::AmsReactiveImportPower: return this->reactiveImportPower;
+        case AmsField::AmsActiveExportPower: return this->activeExportPower;
+        case AmsField::AmsReactiveExportPower: return this->reactiveExportPower;
+        case AmsField::AmsPowerFactor: return this->powerFactor;
+        case AmsField::AmsActiveImportCounter: return this->activeImportCounter;
+        case AmsField::AmsReactiveImportCounter: return this->reactiveImportCounter;
+        case AmsField::AmsActiveExportCounter: return this->activeExportCounter;
+        case AmsField::AmsReactiveExportCounter: return this->reactiveExportCounter;
+        case AmsField::AmsL1Voltage: return this->l1voltage;
+        case AmsField::AmsL2Voltage: return this->l2voltage;
+        case AmsField::AmsL3Voltage: return this->l3voltage;
+        case AmsField::AmsL1Current: return this->l1current;
+        case AmsField::AmsL2Current: return this->l2current;
+        case AmsField::AmsL3Current: return this->l3current;
+        case AmsField::AmsL1PowerFactor: return this->l1PowerFactor;
+        case AmsField::AmsL2PowerFactor: return this->l2PowerFactor;
+        case AmsField::AmsL3PowerFactor: return this->l3PowerFactor;
+        case AmsField::AmsL1ActiveImportPower: return this->l1activeImportPower;
+        case AmsField::AmsL2ActiveImportPower: return this->l2activeImportPower;
+        case AmsField::AmsL3ActiveImportPower: return this->l3activeImportPower;
+        case AmsField::AmsL1ActiveExportPower: return this->l1activeExportPower;
+        case AmsField::AmsL2ActiveExportPower: return this->l2activeExportPower;
+        case AmsField::AmsL3ActiveExportPower: return this->l3activeExportPower;
+        default: return -1;
+    }
+}
+
+String AmsData::getAmsStringField(AmsField field) {
+    switch(field) {
+        case AmsField::AmsMeterId: return this->meterId;
+        case AmsField::AmsListId: return this->listId;
+        default: return "_";
+    }
+}
+
+
+bool AmsData::hasAmsField(AmsField field) {
+    return !!(this->available & field);
+}

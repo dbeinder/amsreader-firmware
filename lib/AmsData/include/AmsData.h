@@ -16,6 +16,55 @@ enum AmsType {
     AmsTypeUnknown = 0xFF
 };
 
+enum AmsField : uint32_t {
+    None = 0,
+    AmsActiveImportPower = 1 << 0,
+    AmsReactiveImportPower = 1 << 1,
+    AmsActiveExportPower = 1 << 2,
+    AmsReactiveExportPower = 1 << 3,
+    AmsPowerFactor = 1 << 4,
+    AmsActiveImportCounter = 1 << 5,
+    AmsReactiveImportCounter = 1 << 6,
+    AmsActiveExportCounter = 1 << 7,
+    AmsReactiveExportCounter = 1 << 8,
+    AmsL1Voltage = 1 << 9,
+    AmsL2Voltage = 1 << 10,
+    AmsL3Voltage = 1 << 11,
+    AmsL1Current = 1 << 12,
+    AmsL2Current = 1 << 13,
+    AmsL3Current = 1 << 14,
+    AmsL1Current = 1 << 15,
+    AmsL1PowerFactor = 1 << 15,
+    AmsL2PowerFactor = 1 << 16,
+    AmsL3PowerFactor = 1 << 17,
+    AmsL1ActiveImportPower = 1 << 18,
+    AmsL2ActiveImportPower = 1 << 19,
+    AmsL3ActiveImportPower = 1 << 20,
+    AmsL1ActiveExportPower = 1 << 21,
+    AmsL2ActiveExportPower = 1 << 22,
+    AmsL3ActiveExportPower = 1 << 23,
+
+    AmsListId = 1 << 28,
+    AmsMeterId = 1 << 29,
+    AmsPackageTimestamp = 1 << 30,
+    AmsMeterTimestamp = 1u << 31
+};
+
+inline AmsField operator |(AmsField a, AmsField b)
+{
+    return static_cast<AmsField>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+inline AmsField operator &(AmsField a, AmsField b)
+{
+    return static_cast<AmsField>(static_cast<int>(a) & static_cast<int>(b));
+}
+
+inline AmsField& operator |=(AmsField& a, AmsField b)
+{
+    return a = a | b;
+}
+
 class AmsData {
 public:
     AmsData();
@@ -69,6 +118,10 @@ public:
     bool isThreePhase();
     bool isTwoPhase();
 
+    double getAmsNumberField(AmsField field);
+    String getAmsStringField(AmsField field);
+    bool hasAmsField(AmsField field);
+
     int8_t getLastError();
     void setLastError(int8_t);
 
@@ -89,6 +142,7 @@ protected:
 
     int8_t lastError = 0x00;
     uint8_t lastErrorCount = 0;
+    AmsField available = AmsField::None;
 };
 
 #endif
