@@ -930,6 +930,7 @@ void swapWifiMode() {
 	WiFi.disconnect(true);
 	WiFi.softAPdisconnect(true);
 	WiFi.mode(WIFI_OFF);
+	delay(10);
 	yield();
 
 	if (mode != WIFI_AP || !config.hasConfig()) {
