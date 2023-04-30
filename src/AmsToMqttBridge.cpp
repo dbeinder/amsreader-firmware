@@ -125,6 +125,8 @@ AmsDataStorage ds(&Debug);
 EnergyAccounting ea(&Debug);
 
 uint8_t wifiReconnectCount = 0;
+unsigned long wifiTimeout = WIFI_CONNECTION_TIMEOUT;
+unsigned long lastWifiRetry = -WIFI_CONNECTION_TIMEOUT;
 
 HDLCParser *hdlcParser = NULL;
 MBUSParser *mbusParser = NULL;
@@ -137,7 +139,7 @@ DSMRParser *dsmrParser = NULL;
 
 void configFileParse();
 void swapWifiMode();
-void WiFi_connect();
+void WiFi_connect(bool checkForDisconnect);
 void WiFi_post_connect();
 void MQTT_connect();
 void handleNtpChange();
@@ -268,6 +270,7 @@ void setup() {
 		}  
 	}
 
+	WiFi.persistent(false);
 	WiFi.disconnect(true);
 	WiFi.softAPdisconnect(true);
 	WiFi.mode(WIFI_OFF);
@@ -360,7 +363,7 @@ void setup() {
 
 	if(config.hasConfig()) {
 		if(Debug.isActive(RemoteDebug::INFO)) config.print(&Debug);
-		WiFi_connect();
+		WiFi_connect(false);
 		
 		NtpConfig ntp;
 		if(config.getNtpConfig(ntp)) {
@@ -452,7 +455,7 @@ void loop() {
 		if (WiFi.status() != WL_CONNECTED) {
 			wifiConnected = false;
 			Debug.stop();
-			WiFi_connect();
+			WiFi_connect(true);
 		} else {
 			wifiReconnectCount = 0;
 			if(!wifiConnected) {
@@ -934,7 +937,7 @@ void errorBlink() {
 				break;
 			case 2:
 				if(WiFi.getMode() != WIFI_AP && WiFi.status() != WL_CONNECTED) {
-					debugW_P(PSTR("WiFi not connected, tripe blink"));
+					debugW_P(PSTR("WiFi not connected, triple blink"));
 					hw.ledBlink(LED_RED, 3); // If WiFi not connected, blink three times
 					return;
 				}
@@ -951,10 +954,6 @@ void swapWifiMode() {
 	if(dnsServer != NULL) {
 		dnsServer->stop();
 	}
-	WiFi.disconnect(true);
-	WiFi.softAPdisconnect(true);
-	WiFi.mode(WIFI_OFF);
-	yield();
 
 	if (mode != WIFI_AP || !config.hasConfig()) {
 		if(Debug.isActive(RemoteDebug::INFO)) debugI_P(PSTR("Swapping to AP mode"));
@@ -989,7 +988,9 @@ void swapWifiMode() {
 			delete dnsServer;
 			dnsServer = NULL;
 		}
-		WiFi_connect();
+		lastWifiRetry = -WIFI_CONNECTION_TIMEOUT;
+		WiFi_connect(false);
+		WiFi.softAPdisconnect(true);
 	}
 	delay(500);
 	if(!hw.ledOff(LED_YELLOW)) {
@@ -1249,9 +1250,8 @@ void debugPrint(byte *buffer, int start, int length) {
 	Debug.println(F(""));
 }
 
-unsigned long wifiTimeout = WIFI_CONNECTION_TIMEOUT;
-unsigned long lastWifiRetry = -WIFI_CONNECTION_TIMEOUT;
-void WiFi_connect() {
+bool delayedReconnectQueued = false;
+void WiFi_connect(bool checkForDisconnect) {
 	if(millis() - lastWifiRetry < wifiTimeout) {
 		delay(50);
 		return;
@@ -1265,7 +1265,7 @@ void WiFi_connect() {
 			return;
 		}
 
-		if(WiFi.getMode() != WIFI_OFF) {
+		if(checkForDisconnect && !delayedReconnectQueued) {
 			if(wifiReconnectCount > 3 && wifi.autoreboot) {
 				ESP.restart();
 				return;
@@ -1295,11 +1295,10 @@ void WiFi_connect() {
 			#endif
 
 			MDNS.end();
-			WiFi.disconnect(true);
-			WiFi.softAPdisconnect(true);
-			WiFi.enableAP(false);
-			WiFi.mode(WIFI_OFF);
+			WiFi.setAutoReconnect(false);
+			WiFi.disconnect();
 			yield();
+			delayedReconnectQueued = true;
 			wifiTimeout = 5000;
 			return;
 		}
@@ -1308,13 +1307,13 @@ void WiFi_connect() {
 		if (Debug.isActive(RemoteDebug::INFO)) debugI_P(PSTR("Connecting to WiFi network: %s"), wifi.ssid);
 
 		wifiReconnectCount++;
+		delayedReconnectQueued = false;
 
 		#if defined(ESP32)
 			if(strlen(wifi.hostname) > 0) {
 				WiFi.setHostname(wifi.hostname);
 			}	
 		#endif
-		WiFi.mode(WIFI_STA);
 
 		if(strlen(wifi.ip) > 0) {
 			IPAddress ip, gw, sn(255,255,255,0), dns1, dns2;
