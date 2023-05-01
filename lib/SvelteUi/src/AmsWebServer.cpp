@@ -870,7 +870,8 @@ void AmsWebServer::configurationJson() {
 		strlen(wifiConfig.psk) > 0 ? "***" : "",
 		wifiConfig.power / 10.0,
 		wifiConfig.sleep,
-		wifiConfig.autoreboot ? "true" : "false"
+		wifiConfig.autoreboot ? "true" : "false",
+		wifiConfig.use11b ? "true" : "false"
 	);
 	server.sendContent(buf);
 	snprintf_P(buf, BufferSize, CONF_NET_JSON,
@@ -1124,7 +1125,6 @@ void AmsWebServer::handleSave() {
 		if(!psk.equals("***")) {
 			strcpy(wifi.psk, psk.c_str());
 		}
-		wifi.mode = 1; // WIFI_STA
 
 		if(server.hasArg(F("sm")) && server.arg(F("sm")) == "static") {
 			strcpy(wifi.ip, server.arg(F("si")).c_str());
@@ -1150,7 +1150,6 @@ void AmsWebServer::handleSave() {
 				meterConfig->baud = 2400;
 				meterConfig->parity = 3; // 8N1
 			case 2: // spenceme
-			case 8: // dbeinder: HAN mosquito
 			case 50: // Generic ESP32-S2
 			case 51: // Wemos S2 mini
 			case 70: // Generic ESP32-C3
@@ -1160,6 +1159,10 @@ void AmsWebServer::handleSave() {
 			case 4: // Pow-U UART0
 			case 7: // Pow-U+
 				wifi.sleep = 2; // Light sleep
+				break;
+			case 8: // dbeinder: HAN mosquito
+				wifi.sleep = 1; // Modem sleep
+				wifi.use11b = 0;
 				break;
 		}
 		config->setWiFiConfig(wifi);
@@ -1228,6 +1231,7 @@ void AmsWebServer::handleSave() {
 		wifi.power = server.arg(F("ww")).toFloat() * 10;
 		wifi.sleep = server.arg(F("wz")).toInt();
 		wifi.autoreboot = server.hasArg(F("wa")) && server.arg(F("wa")) == F("true");
+		wifi.use11b = server.hasArg(F("wb")) && server.arg(F("wb")) == F("true");
 		config->setWiFiConfig(wifi);
 
 		if(server.hasArg(F("nm"))) {

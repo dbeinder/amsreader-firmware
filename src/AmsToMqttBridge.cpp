@@ -38,6 +38,8 @@ ADC_MODE(ADC_VCC);
 #include <driver/uart.h>
 #endif
 
+#include <esp_wifi.h>
+
 #include "FirmwareVersion.h"
 #include "AmsToMqttBridge.h"
 #include "AmsStorage.h"
@@ -127,6 +129,7 @@ EnergyAccounting ea(&Debug);
 uint8_t wifiReconnectCount = 0;
 unsigned long wifiTimeout = WIFI_CONNECTION_TIMEOUT;
 unsigned long lastWifiRetry = -WIFI_CONNECTION_TIMEOUT;
+bool wifiDisable11b = true;
 
 HDLCParser *hdlcParser = NULL;
 MBUSParser *mbusParser = NULL;
@@ -158,6 +161,14 @@ void errorBlink();
 void printHanReadError(int pos);
 void debugPrint(byte *buffer, int start, int length);
 
+void OnWiFiInit(WiFiEvent_t event)
+{
+	if (wifiDisable11b) {
+		debugI_P(PSTR("Disabling 802.11b rates"));
+		esp_wifi_config_11b_rate(WIFI_IF_AP, true);
+		esp_wifi_config_11b_rate(WIFI_IF_STA, true);
+	}
+}
 
 void setup() {
 	Serial.begin(115200);
@@ -274,6 +285,12 @@ void setup() {
 	WiFi.disconnect(true);
 	WiFi.softAPdisconnect(true);
 	WiFi.mode(WIFI_OFF);
+
+	WiFiConfig wifiConf;
+	if(config.getWiFiConfig(wifiConf)) {
+		wifiDisable11b = !wifiConf.use11b;
+	}
+	WiFi.onEvent(OnWiFiInit, ARDUINO_EVENT_WIFI_READY);
 
 	bool hasFs = false;
 #if defined(ESP32)
