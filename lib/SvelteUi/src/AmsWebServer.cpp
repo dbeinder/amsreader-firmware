@@ -4,6 +4,8 @@
  * 
  */
 
+#include "Update.h"
+
 #include "AmsWebServer.h"
 #include "AmsWebHeaders.h"
 #include "FirmwareVersion.h"
@@ -1838,12 +1840,70 @@ debugger->printf_P(PSTR("No file, falling back to post\n"));
 			#endif
 		}
 	}
-	uploadFile(FILE_FIRMWARE);
-	if(upload.status == UPLOAD_FILE_END) {
+	uploadFirmware();
+	if(uploading && upload.status == UPLOAD_FILE_END) {
 		rebootForUpgrade = true;
 		server.sendHeader(HEADER_LOCATION,F("/"));
 		server.send(302);
 	}
+}
+
+HTTPUpload& AmsWebServer::uploadFirmware() {
+    HTTPUpload& upload = server.upload();
+    if(upload.status == UPLOAD_FILE_START) {
+		uint32_t maxSketchSpace = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+		if (debugger->isActive(RemoteDebug::ERROR))
+			debugger->printf_P(PSTR("Update START, max: %d bytes\n"), maxSketchSpace);
+		if(uploading) {
+			if (debugger->isActive(RemoteDebug::ERROR))
+				debugger->printf_P(PSTR("Upload already in progress\n"));
+			server.send_P(500, MIME_HTML, PSTR("<h1>Upload already in progress!</h1>"));
+			return upload;
+		} else if (!Update.begin(maxSketchSpace, U_FLASH)) {
+			if (debugger->isActive(RemoteDebug::ERROR))
+				debugger->printf_P(PSTR("Update.begin() = %s\n"), Update.errorString());
+			server.send_P(500, MIME_HTML, PSTR("<h1>Error in begin()!</h1>"));
+			return upload;
+		} else {
+			uploading = true;
+	    }
+    }
+	if(uploading && (upload.status == UPLOAD_FILE_WRITE || upload.status == UPLOAD_FILE_START)) {
+		size_t written = Update.write(upload.buf, upload.currentSize);
+		delay(10); //slow down transfer to avoid draining power reservoir
+		if(written != upload.currentSize) {
+			Update.abort();
+
+			if (debugger->isActive(RemoteDebug::ERROR))
+				debugger->printf_P(PSTR("Error writing chunk: %s\n"), Update.errorString());
+			snprintf_P(buf, BufferSize, RESPONSE_JSON,
+				"false",
+				"Error writing update (too large?)",
+				"false"
+			);
+			server.setContentLength(strlen(buf));
+			server.send(500, MIME_JSON, buf);
+			uploading = false;
+		}
+    } else if(uploading && upload.status == UPLOAD_FILE_END) {
+		if (debugger->isActive(RemoteDebug::ERROR))
+			debugger->printf_P(PSTR("Update END %d bytes written\n"), upload.totalSize);
+
+        if(Update.end(true)) {
+			debugger->printf_P(PSTR("Update end success\n"));
+        } else {
+			debugger->printf_P(PSTR("Update end failed: %s\n"), Update.errorString());
+			snprintf_P(buf, BufferSize, RESPONSE_JSON,
+				"false",
+				"Upload end failed!",
+				"false"
+			);
+			server.setContentLength(strlen(buf));
+			server.send(500, MIME_JSON, buf);
+			uploading = false;
+        }
+    }
+	return upload;
 }
 
 HTTPUpload& AmsWebServer::uploadFile(const char* path) {

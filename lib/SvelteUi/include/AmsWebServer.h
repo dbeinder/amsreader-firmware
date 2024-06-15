@@ -152,6 +152,7 @@ private:
 	void mqttKeyUpload();
 	void mqttKeyDelete();
 	HTTPUpload& uploadFile(const char* path);
+	HTTPUpload& uploadFirmware();
 	void deleteFile(const char* path);
 
 	void configFileDownload();
